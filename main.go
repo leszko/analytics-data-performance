@@ -1,12 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"time"
 )
-
-var producerClient = CreateKafkaClient("playbackLogs4")
 
 const msgTemplate = `
 {
@@ -51,26 +50,54 @@ const msgTemplate = `
 }
 `
 
-var playbackIds = []string{
-	"abcdefgh-1",
-	"abcdefgh-2",
-	"abcdefgh-3",
-}
+var (
+	deviceTypes = []string{
+		"Macintosh",
+		"Android",
+		"iPhone",
+	}
+	browsers = []string{
+		"Chrome",
+		"Safari",
+		"Edge",
+		"Explorer",
+		"Firefox",
+	}
+	countries = []string{
+		"Poland",
+		"Germany",
+		"Ukraine",
+		"France",
+		"Spain",
+		"Czechia",
+	}
+)
 
 func main() {
-	fmt.Println("Starting sending playback logs")
+	var (
+		playbackID    = "abcdefgh-1"
+		sessionNumber = 1
+		kafkaTopic    = "playbackLogs4"
+	)
+	flag.StringVar(&playbackID, "playback-id", playbackID, "playbackID")
+	flag.IntVar(&sessionNumber, "session-number", sessionNumber, "number of concurrent sessions")
+	flag.StringVar(&kafkaTopic, "kafka-topic", kafkaTopic, "kafka topic")
+	flag.Parse()
+
+	var producerClient = CreateKafkaClient(kafkaTopic, sessionNumber)
+
+	fmt.Println("Starting sending playback logs...")
 
 	done := make(chan bool)
-
 	kafkaMsgs := make(chan string, 1000)
 
-	for i := 0; i < 100000; i++ {
-		sessionId := fmt.Sprintf("%d", i)
+	for i := 0; i < sessionNumber; i++ {
+		sessionID := fmt.Sprintf("%s-%d", playbackID, i)
 		go func() {
 			// Start each goroutine with a random delay
 			time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 			for {
-				kafkaMsgs <- msg(sessionId)
+				kafkaMsgs <- msg(playbackID, sessionID)
 				time.Sleep(5 * time.Second)
 			}
 		}()
@@ -85,28 +112,21 @@ func main() {
 	}()
 
 	<-done
-
-	//fmt.Println(msg)
-	//for i := 0; i < 1; i++ {
-
-	//}
-
-	//queryKSQL()
 }
 
-func msg(sessionId string) string {
-	errors := 2
-	deviceType := "Macintosh"
-	browser := "Chrome"
+func msg(playbackID, sessionID string) string {
+	errors := 0
+	deviceType := deviceTypes[rand.Intn(len(deviceTypes))]
+	browser := browsers[rand.Intn(len(browsers))]
 	continent := "Europe"
-	country := "Poland"
+	country := countries[rand.Intn(len(countries))]
 	userId := "user12345"
 	creatorId := "creator12345"
 	timestamp := time.Now().UnixMilli()
 	return fmt.Sprintf(msgTemplate,
-		sessionId,
+		sessionID,
 		timestamp,
-		playbackIds[0],
+		playbackID,
 		userId,
 		creatorId,
 		deviceType,
@@ -117,15 +137,3 @@ func msg(sessionId string) string {
 		timestamp,
 	)
 }
-
-//func sendPeriodicPlaybackLog() {
-//	var i int = 17000
-//	for {
-//		for _, msg := range messages {
-//			msgSentAt[i] = time.Now()
-//			producerClient.Send(fmt.Sprintf(msg, i))
-//			i++
-//			time.Sleep(100 * time.Millisecond)
-//		}
-//	}
-//}

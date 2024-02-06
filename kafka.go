@@ -14,10 +14,14 @@ type KafkaClient struct {
 	topic    string
 }
 
-func CreateKafkaClient(topic string) *KafkaClient {
+func CreateKafkaClient(topic string, batchNum int) *KafkaClient {
 	bootstrap, _ := os.LookupEnv("KAFKA_BOOTSTRAP")
 	username, _ := os.LookupEnv("KAFKA_USER")
 	password, _ := os.LookupEnv("KAFKA_PASSWORD")
+
+	if batchNum > 1000 {
+		batchNum = 1000
+	}
 	cfg := &kafka.ConfigMap{
 		"bootstrap.servers":  bootstrap,
 		"security.protocol":  "SASL_SSL",
@@ -26,7 +30,7 @@ func CreateKafkaClient(topic string) *KafkaClient {
 		"sasl.password":      password,
 		"session.timeout.ms": 45000,
 		"group.id":           1,
-		"batch.num.messages": 1000,
+		"batch.num.messages": batchNum,
 		"auto.offset.reset":  "earliest",
 		"client.id":          1,
 	}
@@ -71,9 +75,6 @@ func (c *KafkaClient) Send(msg string) {
 		Key:            []byte(msgShort),
 		Value:          []byte(msgShort),
 	}, nil)
-
-	// Wait for message deliveries before shutting down
-	//c.producer.Flush(15 * 1000)
 }
 
 func (c *KafkaClient) Subscribe() chan string {
