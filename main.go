@@ -164,7 +164,6 @@ func main() {
 	flag.Parse()
 
 	var producerClient = CreateKafkaClient(kafkaTopic, sessionNumber)
-
 	fmt.Println("Starting sending playback logs...")
 
 	done := make(chan bool)
@@ -173,11 +172,23 @@ func main() {
 	for i := 0; i < sessionNumber; i++ {
 		playbackID := playbackIds[rand.Intn(len(playbackIds))]
 		sessionID := fmt.Sprintf("%s-%d", playbackID, i)
+		deviceType := deviceTypes[rand.Intn(len(deviceTypes))]
+		browser := browsers[rand.Intn(len(browsers))]
+		country := countries[rand.Intn(len(countries))]
+		creatorId := "creator12345"
+
 		go func() {
 			// Start each goroutine with a random delay
 			time.Sleep(time.Duration(rand.Intn(5000)) * time.Millisecond)
 			for {
-				kafkaMsgs <- msg(playbackID, sessionID)
+				kafkaMsgs <- msg(
+					playbackID,
+					sessionID,
+					deviceType,
+					browser,
+					country,
+					creatorId,
+				)
 				time.Sleep(5 * time.Second)
 			}
 		}()
@@ -194,15 +205,19 @@ func main() {
 	<-done
 }
 
-func msg(playbackID, sessionID string) string {
+func msg(
+	playbackID string,
+	sessionID string,
+	deviceType string,
+	browser string,
+	country string,
+	creatorId string,
+) string {
 	errors := 0
-	deviceType := deviceTypes[rand.Intn(len(deviceTypes))]
-	browser := browsers[rand.Intn(len(browsers))]
 	continent := "Europe"
-	country := countries[rand.Intn(len(countries))]
 	userId := "user12345"
-	creatorId := "creator12345"
 	timestamp := time.Now().UnixMilli()
+
 	return fmt.Sprintf(msgTemplate,
 		sessionID,
 		timestamp,
