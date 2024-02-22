@@ -155,7 +155,7 @@ var (
 func main() {
 	var (
 		playbackID    = "abcdefgh-1"
-		sessionNumber = 1
+		sessionNumber = 100000
 		kafkaTopic    = "playbackLogs4"
 	)
 	flag.StringVar(&playbackID, "playback-id", playbackID, "playbackID")
