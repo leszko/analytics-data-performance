@@ -10,9 +10,9 @@ import (
 const msgTemplate = `
 {
     "session_id": "%s",
-    "timestamp": %d,
+    "server_timestamp": %d,
     "playback_id": "%s",
-    "ip":"73.152.182.50",
+    "viewership_hash":"4ee7ed32-ae83-49fc-874e-6b291e7c94bd",
     "protocol":"video/mp4",
     "page_url": "https://www.fishtank.live/",
     "source_url": "https://vod-cdn.lp-playback.studio/raw/jxf4iblf6wlsyor6526t4tcmtmqa/catalyst-vod-com/hls/362f9l7ekeoze518/1080p0.mp4?tkn=8b140ec6b404a",
@@ -20,7 +20,7 @@ const msgTemplate = `
     "timestamp_ts": "2023-08-27 10:11:02.957000 UTC",
     "user_id": "%s",
     "d_storage_url": "",
-    "source":"stream/asset/recording",
+    "source":"asset",
     "creator_id": "%s",
     "deviceType": "%s",
     "device_model": "iPhone 12",
@@ -35,17 +35,26 @@ const msgTemplate = `
     "playback_subdivision_name": "Calirfornia",
     "playback_timezone": "America/Los_Angeles",
     "data": {
-        "errors": %d, 
-        "playtime_ms": 4500,
-        "ttff_ms": 300,
-        "preload_time_ms": 1000,
-        "autoplay_status": "auto",
-        "buffer_ms": 50,
-        "event": {
-            "type": "heartbeat",
-            "timestamp":%d,
-            "payload": "heartbeat message"
-        }
+		"event_type": "heartbeat",
+		"event_timestamp": %d,
+        "autoplay_status": "autoplay",
+        "stalled_count": 0,
+        "waiting_count": 0,
+        "time_errored_ms": 0,
+        "time_stalled_ms": 0,
+        "time_playing_ms": 5000,
+        "time_waiting_ms": 0,
+        "mount_to_play_ms": 86,
+        "mount_to_first_frame_ms": 134,
+        "play_to_first_frame_ms": 48,
+        "duration_ms": 3600000,
+        "offset_ms": 1688,
+        "player_height_px": 123,
+        "player_width_px": 124,
+        "video_height_px": 12345,
+        "video_width_px": 124,
+        "window_height_px": 532,
+        "window_width_px": 234
     }
 }
 `
@@ -155,8 +164,8 @@ var (
 func main() {
 	var (
 		playbackID    = "abcdefgh-1"
-		sessionNumber = 100000
-		kafkaTopic    = "playbackLogs4"
+		sessionNumber = 10
+		kafkaTopic    = "viewership_events"
 	)
 	flag.StringVar(&playbackID, "playback-id", playbackID, "playbackID")
 	flag.IntVar(&sessionNumber, "session-number", sessionNumber, "number of concurrent sessions")
@@ -171,7 +180,7 @@ func main() {
 
 	for i := 0; i < sessionNumber; i++ {
 		playbackID := playbackIds[rand.Intn(len(playbackIds))]
-		sessionID := fmt.Sprintf("%s-%d", playbackID, i)
+		sessionID := fmt.Sprintf("%s-%d-%d", playbackID, i, rand.Intn(1000))
 		deviceType := deviceTypes[rand.Intn(len(deviceTypes))]
 		browser := browsers[rand.Intn(len(browsers))]
 		country := countries[rand.Intn(len(countries))]
@@ -213,7 +222,6 @@ func msg(
 	country string,
 	creatorId string,
 ) string {
-	errors := 0
 	continent := "Europe"
 	userId := "user12345"
 	timestamp := time.Now().UnixMilli()
@@ -228,7 +236,6 @@ func msg(
 		browser,
 		continent,
 		country,
-		errors,
 		timestamp,
 	)
 }
